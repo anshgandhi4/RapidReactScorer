@@ -25,10 +25,14 @@
 import 'package:flutter/material.dart';
 import 'num.dart';
 
-int aScore = 0;
-int tScore = 0;
-int pScore = 0;
+Num aScore = Num();
+Num tScore = Num();
+Num pScore = Num();
+
 int totalScore = 0;
+int totalRP = 0;
+
+Num _m1 = Num();
 
 Num _a1 = Num();
 Num _a2 = Num();
@@ -44,45 +48,16 @@ Num _p1 = Num();
 Num _p2 = Num();
 
 Score score = Score();
-SectionTitle aTitle = SectionTitle(title: 'Autonomous', update: getA);
-SectionTitle tTitle = SectionTitle(title: 'Teleop', update: getT);
-SectionTitle pTitle = SectionTitle(title: 'Penalties', update: getP);
+SectionTitle aTitle = SectionTitle(title: 'Autonomous', score: aScore);
+SectionTitle tTitle = SectionTitle(title: 'Teleop', score: tScore);
+SectionTitle pTitle = SectionTitle(title: 'Penalties', score: pScore);
 
+Match match = Match();
 Auto auto = Auto();
 Teleop teleop = Teleop();
 Penalty penalty = Penalty();
-List modes = [Logo(), auto, teleop, penalty];
+List modes = [Logo(), match, auto, teleop, penalty];
 bool mobile = false;
-
-void titleReset() {
-  totalScore = aScore + tScore + pScore;
-  score.rebuild();
-  aTitle.rebuild();
-  tTitle.rebuild();
-  pTitle.rebuild();
-}
-
-int getA() {
-  return aScore;
-}
-
-void setA(int newA) {
-  aScore = newA;
-  titleReset();
-}
-
-void calcA() {
-  setA(2 * _a1.getInt() + 2 * _a2.getInt() + 4 * _a3.getInt());
-}
-
-int getT() {
-  return tScore;
-}
-
-void setT(int newT) {
-  tScore = newT;
-  titleReset();
-}
 
 int calcHanging(int rung) {
   if (rung == 1) return 4;
@@ -92,21 +67,48 @@ int calcHanging(int rung) {
   return 0;
 }
 
+void calcA() {
+  aScore.setInt(2 * _a1.getInt() + 2 * _a2.getInt() + 4 * _a3.getInt());
+}
+
 void calcT() {
-  setT(_t1.getInt() + 2 * _t2.getInt() + calcHanging(_t3.getInt()) + calcHanging(_t4.getInt()) + calcHanging(_t5.getInt()));
-}
-
-int getP() {
-  return pScore;
-}
-
-void setP(int newP) {
-  pScore = newP;
-  titleReset();
+  tScore.setInt(_t1.getInt() + 2 * _t2.getInt() + calcHanging(_t3.getInt()) + calcHanging(_t4.getInt()) + calcHanging(_t5.getInt()));
 }
 
 void calcP() {
-  setP(-4 * _p1.getInt() + -8 * _p2.getInt());
+  pScore.setInt(-4 * _p1.getInt() + -8 * _p2.getInt());
+}
+
+int calcScore() {
+  return aScore.getInt() + tScore.getInt() + pScore.getInt();
+}
+
+int calcRP() {
+  int rp = _m1.getInt();
+  int autoCargo = _a2.getInt() + _a3.getInt();
+  int totalCargo = autoCargo + _t1.getInt() + _t2.getInt();
+
+  if (autoCargo < 5 && totalCargo >= 20) {
+    rp++;
+  } else if (autoCargo >= 5 && totalCargo >= 18) {
+    rp++;
+  }
+
+  if (calcHanging(_t3.getInt()) + calcHanging(_t4.getInt()) + calcHanging(_t5.getInt()) >= 16) {
+    rp++;
+  }
+
+  return rp;
+}
+
+void titleReset() {
+  totalScore = calcScore();
+  totalRP = calcRP();
+
+  score.rebuild();
+  aTitle.rebuild();
+  tTitle.rebuild();
+  pTitle.rebuild();
 }
 
 void main() => runApp(MaterialApp(
@@ -202,20 +204,37 @@ class Score extends StatefulWidget {
 class _ScoreState extends State<Score> {
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: <Widget>[
-        Text(
-          'Total Score: $totalScore',
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 32.0,
-            fontWeight: FontWeight.bold,
-          ),
+        const SizedBox(height: 5.0),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Text(
+              'Score: $totalScore',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(width: 30.0),
+            Text(
+              'RP: $totalRP',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28.0,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 10.0),
+        const SizedBox(height: 5.0),
         IconButton(
           icon: const Icon(
             Icons.refresh,
@@ -225,12 +244,14 @@ class _ScoreState extends State<Score> {
           onPressed: () {
             if (mounted) {
               setState(() {
+                match.reset();
                 auto.reset();
                 teleop.reset();
                 penalty.reset();
                 calcA();
                 calcT();
                 calcP();
+                titleReset();
               });
             }
           },
@@ -247,10 +268,10 @@ class _ScoreState extends State<Score> {
 }
 
 class SectionTitle extends StatefulWidget {
-  SectionTitle({Key? key, required this.title, required this.update}) : super(key: key);
+  SectionTitle({Key? key, required this.title, required this.score}) : super(key: key);
 
   final String title;
-  final Function update;
+  final Num score;
 
   _SectionTitleState sectionTitleState = _SectionTitleState();
 
@@ -266,16 +287,16 @@ class SectionTitle extends StatefulWidget {
 }
 
 class _SectionTitleState extends State<SectionTitle> {
-  String title = '';
-  Function update = () {};
+  late String title;
+  late Num score;
 
   @override
   Widget build(BuildContext context) {
     title = widget.title;
-    update = widget.update;
+    score = widget.score;
 
     return Text(
-      '$title: ${update().toInt()}',
+      '$title: ${score.getInt()}',
       textAlign: TextAlign.center,
       style: const TextStyle(
         color: Colors.white,
@@ -293,12 +314,13 @@ class _SectionTitleState extends State<SectionTitle> {
 }
 
 class CustomSlider extends StatefulWidget {
-  CustomSlider({Key? key, required this.scorevar, required this.update, required this.minvar, required this.maxvar, this.parent}): super(key: key);
+  CustomSlider({Key? key, required this.score, required this.update, required this.min, required this.max, required this.text, this.parent}): super(key: key);
 
-  final Num scorevar;
+  final Num score;
   final Function update;
-  final double minvar;
-  final double maxvar;
+  final double min;
+  final double max;
+  final String text;
   final dynamic parent;
 
   _CustomSliderState customSliderState = _CustomSliderState();
@@ -312,47 +334,63 @@ class CustomSlider extends StatefulWidget {
 }
 
 class _CustomSliderState extends State<CustomSlider> {
-  late Num scorevar;
+  late Num score;
   late Function update;
-  late double minvar;
-  late double maxvar;
+  late double min;
+  late double max;
+  late String text;
   dynamic parent;
 
   @override
   Widget build(BuildContext context) {
-    scorevar = widget.scorevar;
+    score = widget.score;
     update = widget.update;
-    minvar = widget.minvar;
-    maxvar = widget.maxvar;
+    min = widget.min;
+    max = widget.max;
+    text = widget.text;
     parent = widget.parent;
 
-    return SliderTheme(
-      data: SliderThemeData(
-        activeTickMarkColor: Colors.grey.shade200,
-        activeTrackColor: Colors.grey.shade700,
-        inactiveTickMarkColor: Colors.grey.shade300,
-        inactiveTrackColor: Colors.grey.shade500,
-        thumbColor: Colors.grey.shade800,
-      ),
-      child: SizedBox(
-        width: 150.0,
-        child: Slider(
-          value: scorevar.get(),
-          onChanged: (double value) {
-            scorevar.set(value);
-            update();
-            if (mounted) {
-              setState(() {
-                scorevar.set(value);
-              });
-            }
-          },
-          min: minvar,
-          max: maxvar,
-          divisions: (maxvar - minvar).toInt(),
-          label: '${scorevar.getInt()}',
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: <Widget>[
+        SliderTheme(
+          data: SliderThemeData(
+            activeTickMarkColor: Colors.grey.shade200,
+            activeTrackColor: Colors.grey.shade700,
+            inactiveTickMarkColor: Colors.grey.shade300,
+            inactiveTrackColor: Colors.grey.shade500,
+            thumbColor: Colors.grey.shade800,
+          ),
+          child: SizedBox(
+            width: 150.0,
+            child: Slider(
+              value: score.get(),
+              onChanged: (double value) {
+                score.set(value);
+                update();
+                titleReset();
+                if (mounted) {
+                  setState(() {
+                    score.set(value);
+                  });
+                }
+              },
+              min: min,
+              max: max,
+              divisions: (max - min).toInt(),
+              label: '${score.getInt()}',
+            ),
+          ),
         ),
-      ),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18.0,
+          ),
+        ),
+      ],
     );
   }
 
@@ -360,16 +398,18 @@ class _CustomSliderState extends State<CustomSlider> {
     if (mounted) {
       setState(() {
         update();
+        titleReset();
       });
     }
   }
 }
 
 class CustomButtonInput extends StatefulWidget {
-  CustomButtonInput({Key? key, required this.scorevar, required this.update, this.parent}) : super(key: key);
+  CustomButtonInput({Key? key, required this.score, required this.update, required this.text, this.parent}) : super(key: key);
 
-  final Num scorevar;
+  final Num score;
   final Function update;
+  final String text;
   final dynamic parent;
 
   _CustomButtonInputState customButtonInputState = _CustomButtonInputState();
@@ -383,15 +423,16 @@ class CustomButtonInput extends StatefulWidget {
 }
 
 class _CustomButtonInputState extends State<CustomButtonInput> {
-  late Num scorevar;
+  late Num score;
   late Function update;
-  late int maxlength;
+  late String text;
   dynamic parent;
 
   @override
   Widget build(BuildContext context) {
-    scorevar = widget.scorevar;
+    score = widget.score;
     update = widget.update;
+    text = widget.text;
     parent = widget.parent;
 
     return Row(
@@ -411,8 +452,9 @@ class _CustomButtonInputState extends State<CustomButtonInput> {
             color: Colors.grey.shade800,
             elevation: mobile ? 4.0 : 8.0,
             onPressed: () {
-              scorevar.setInt(scorevar.getInt() > 0 ? scorevar.getInt() - 1 : 0);
+              score.setInt(score.getInt() > 0 ? score.getInt() - 1 : 0);
               update();
+              titleReset();
               if (mounted) {
                 setState(() {});
               }
@@ -435,8 +477,9 @@ class _CustomButtonInputState extends State<CustomButtonInput> {
             color: Colors.grey.shade800,
             elevation: mobile ? 4.0 : 8.0,
             onPressed: () {
-              scorevar.setInt(scorevar.getInt() + 1);
+              score.setInt(score.getInt() + 1);
               update();
+              titleReset();
               if (mounted) {
                 setState(() {});
               }
@@ -452,7 +495,7 @@ class _CustomButtonInputState extends State<CustomButtonInput> {
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
-              '${scorevar.getInt()}',
+              '${score.getInt()}',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
@@ -463,6 +506,13 @@ class _CustomButtonInputState extends State<CustomButtonInput> {
           ),
         ),
         const SizedBox(width: 15.0),
+        Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 18.0,
+          ),
+        ),
       ],
     );
   }
@@ -470,8 +520,9 @@ class _CustomButtonInputState extends State<CustomButtonInput> {
   void rebuild() {
     if (mounted) {
       setState(() {
-        scorevar.setInt(0);
+        score.setInt(0);
         update();
+        titleReset();
       });
     }
   }
@@ -490,6 +541,63 @@ class _LogoState extends State<Logo> {
       height: 125,
       width: 125,
     );
+  }
+}
+
+class Match extends StatefulWidget {
+  _MatchState matchState = _MatchState();
+
+  @override
+  _MatchState createState() {
+    match = this;
+    matchState = _MatchState();
+    return matchState;
+  }
+
+  void reset() {
+    _m1.setInt(0);
+    matchState.rebuild();
+  }
+
+  void rebuild() {
+    matchState.rebuild();
+  }
+}
+
+class _MatchState extends State<Match> {
+  late CustomSlider m1;
+
+  @override
+  Widget build(BuildContext context) {
+    m1 = CustomSlider(score: _m1, update: () {}, min: 0, max: 2, text: '', parent: this);
+
+    return Card(
+      color: Colors.grey.shade900,
+      elevation: 10.0,
+      child: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          children: <Widget>[
+            const Text(
+              'Lose      Tie      Win',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24.0,
+              ),
+            ),
+            const SizedBox(height: 5.0),
+            m1,
+          ],
+        ),
+      ),
+    );
+  }
+
+  void rebuild() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 }
 
@@ -522,9 +630,9 @@ class _AutoState extends State<Auto> {
 
   @override
   Widget build(BuildContext context) {
-    a1 = CustomSlider(scorevar: _a1, update: calcA, minvar: 0, maxvar: 3, parent: this);
-    a2 = CustomButtonInput(scorevar: _a2, update: calcA, parent: this);
-    a3 = CustomButtonInput(scorevar: _a3, update: calcA, parent: this);
+    a1 = CustomSlider(score: _a1, update: calcA, min: 0, max: 3, text: 'Robots Taxied', parent: this);
+    a2 = CustomButtonInput(score: _a2, update: calcA, text: 'Lower Hub Cargo', parent: this);
+    a3 = CustomButtonInput(score: _a3, update: calcA, text: 'Upper Hub Cargo', parent: this);
 
     return Card(
       color: Colors.grey.shade900,
@@ -535,50 +643,11 @@ class _AutoState extends State<Auto> {
           children: <Widget>[
             aTitle,
             const SizedBox(height: 5.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                a1,
-                const Text(
-                  'Robots Taxied',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.0,
-                  ),
-                ),
-              ],
-            ),
+            a1,
             const SizedBox(height: 5.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                a2,
-                const Text(
-                  'Lower Hub Cargo',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.0,
-                  ),
-                ),
-              ],
-            ),
+            a2,
             const SizedBox(height: 5.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                a3,
-                const Text(
-                  'Upper Hub Cargo',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.0,
-                  ),
-                ),
-              ],
-            ),
+            a3,
           ],
         ),
       ),
@@ -625,11 +694,11 @@ class _TeleopState extends State<Teleop> {
 
   @override
   Widget build(BuildContext context) {
-    t1 = CustomButtonInput(scorevar: _t1, update: calcT, parent: this);
-    t2 = CustomButtonInput(scorevar: _t2, update: calcT, parent: this);
-    t3 = CustomSlider(scorevar: _t3, update: calcT, minvar: 0, maxvar: 4, parent: this);
-    t4 = CustomSlider(scorevar: _t4, update: calcT, minvar: 0, maxvar: 4, parent: this);
-    t5 = CustomSlider(scorevar: _t5, update: calcT, minvar: 0, maxvar: 4, parent: this);
+    t1 = CustomButtonInput(score: _t1, update: calcT, text: 'Lower Hub Cargo', parent: this);
+    t2 = CustomButtonInput(score: _t2, update: calcT, text: 'Upper Hub Cargo', parent: this);
+    t3 = CustomSlider(score: _t3, update: calcT, min: 0, max: 4, text: 'Robot 1 Rung Level', parent: this);
+    t4 = CustomSlider(score: _t4, update: calcT, min: 0, max: 4, text: 'Robot 2 Rung Level', parent: this);
+    t5 = CustomSlider(score: _t5, update: calcT, min: 0, max: 4, text: 'Robot 3 Rung Level', parent: this);
 
     return Card(
       color: Colors.grey.shade900,
@@ -640,80 +709,15 @@ class _TeleopState extends State<Teleop> {
           children: <Widget>[
             tTitle,
             const SizedBox(height: 5.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                t1,
-                const Text(
-                  'Lower Hub Cargo',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.0,
-                  ),
-                ),
-              ],
-            ),
+            t1,
             const SizedBox(height: 5.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                t2,
-                const Text(
-                  'Upper Hub Cargo',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.0,
-                  ),
-                ),
-              ],
-            ),
+            t2,
             const SizedBox(height: 5.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                t3,
-                const Text(
-                  'Robot 1 Rung Level',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.0,
-                  ),
-                ),
-              ],
-            ),
+            t3,
             const SizedBox(height: 5.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                t4,
-                const Text(
-                  'Robot 2 Rung Level',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.0,
-                  ),
-                ),
-              ],
-            ),
+            t4,
             const SizedBox(height: 5.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                t5,
-                const Text(
-                  'Robot 3 Rung Level',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.0,
-                  ),
-                ),
-              ],
-            ),
+            t5,
           ],
         ),
       ),
@@ -754,8 +758,8 @@ class _PenaltyState extends State<Penalty> {
 
   @override
   Widget build(BuildContext context) {
-    p1 = CustomButtonInput(scorevar: _p1, update: calcP, parent: this);
-    p2 = CustomButtonInput(scorevar: _p2, update: calcP, parent: this);
+    p1 = CustomButtonInput(score: _p1, update: calcP, text: 'Foul          ', parent: this);
+    p2 = CustomButtonInput(score: _p2, update: calcP, text: 'Tech Foul', parent: this);
 
     return Card(
       color: Colors.grey.shade900,
@@ -766,35 +770,9 @@ class _PenaltyState extends State<Penalty> {
           children: <Widget>[
             pTitle,
             const SizedBox(height: 5.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                p1,
-                const Text(
-                  'Foul          ',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.0,
-                  ),
-                ),
-              ],
-            ),
+            p1,
             const SizedBox(height: 5.0),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                p2,
-                const Text(
-                  'Tech Foul',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18.0,
-                  ),
-                ),
-              ],
-            ),
+            p2,
           ],
         ),
       ),
