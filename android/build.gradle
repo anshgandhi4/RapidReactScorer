@@ -18,6 +18,7 @@
  *
  * Original Author: Ansh Gandhi
  * Original Source Code: <https://github.com/anshgandhi4/RapidReactScorer>
+ * Original Web App: <https://roboavatars.nibbleguru.com/rapid_react/>
  *
  * EVERYTHING ABOVE THIS LINE MUST BE KEPT AS IS UNDER GNU GPL LICENSE RULES.
  */

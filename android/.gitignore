@@ -1,8 +1,12 @@
 gradle-wrapper.jar
 /.gradle
+/app/storeassets/
+/app/src/main/ic_launcher-playstore.png
+/app/appkey.jks
 /captures/
 /gradlew
 /gradlew.bat
+/key.properties
 /local.properties
 GeneratedPluginRegistrant.java
 
