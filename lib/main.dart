@@ -18,7 +18,8 @@
  *
  * Original Author: Ansh Gandhi
  * Original Source Code: <https://github.com/anshgandhi4/RapidReactScorer>
- * Original Web App: <https://roboavatars.nibbleguru.com/rapid_react/>
+ * Original Web App: <https://roboavatars.nibbleguru.com/rapid_react>
+ * Original Android App: https://play.google.com/store/apps/details?id=com.anshgandhi.rapid_react
  *
  * EVERYTHING ABOVE THIS LINE MUST BE KEPT AS IS UNDER GNU GPL LICENSE RULES.
  */
@@ -52,7 +53,7 @@ Num _p2 = Num();
 Score score = Score();
 SectionTitle aTitle = SectionTitle(title: 'Autonomous', score: aScore);
 SectionTitle tTitle = SectionTitle(title: 'Teleop', score: tScore);
-SectionTitle pTitle = SectionTitle(title: 'Penalties', score: pScore);
+SectionTitle pTitle = SectionTitle(title: 'Opponent Penalties', score: pScore);
 
 Match match = Match();
 Auto auto = Auto();
@@ -78,7 +79,7 @@ void calcT() {
 }
 
 void calcP() {
-  pScore.setInt(-4 * _p1.getInt() + -8 * _p2.getInt());
+  pScore.setInt(4 * _p1.getInt() + 8 * _p2.getInt());
 }
 
 int calcScore() {
